@@ -1,0 +1,12 @@
+datasets:
+  - name: seed
+    source: leaky.csv
+    quasi_identifiers:
+      - birth_date
+      - postcode
+      - gender
+    sensitive:
+      - name: salary
+        type: numeric
+    thresholds:
+      k: 5

@@ -1,0 +1,817 @@
+{
+  "source": "pyCanon",
+  "cases": [
+    {
+      "file": "mixed",
+      "quasi_identifiers": [
+        "birth",
+        "post",
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "diagnosis"
+      ],
+      "kinds": [
+        "categorical"
+      ],
+      "k": 1,
+      "l": 1,
+      "t": 0.8300000000000001
+    },
+    {
+      "file": "mixed",
+      "quasi_identifiers": [
+        "birth",
+        "post",
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "salary"
+      ],
+      "kinds": [
+        "numeric"
+      ],
+      "k": 1,
+      "l": 1,
+      "t": 0.5025
+    },
+    {
+      "file": "mixed",
+      "quasi_identifiers": [
+        "birth",
+        "post",
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "diagnosis",
+        "salary"
+      ],
+      "kinds": [
+        "categorical",
+        "numeric"
+      ],
+      "k": 1,
+      "l": 1,
+      "t": 0.8300000000000001
+    },
+    {
+      "file": "mixed",
+      "quasi_identifiers": [
+        "city"
+      ],
+      "sensitive": [
+        "diagnosis"
+      ],
+      "kinds": [
+        "categorical"
+      ],
+      "k": 90,
+      "l": 5,
+      "t": 0.09416666666666666
+    },
+    {
+      "file": "mixed",
+      "quasi_identifiers": [
+        "city"
+      ],
+      "sensitive": [
+        "salary"
+      ],
+      "kinds": [
+        "numeric"
+      ],
+      "k": 90,
+      "l": 4,
+      "t": 0.04457070707070708
+    },
+    {
+      "file": "mixed",
+      "quasi_identifiers": [
+        "city"
+      ],
+      "sensitive": [
+        "diagnosis",
+        "salary"
+      ],
+      "kinds": [
+        "categorical",
+        "numeric"
+      ],
+      "k": 90,
+      "l": 4,
+      "t": 0.09416666666666666
+    },
+    {
+      "file": "mixed",
+      "quasi_identifiers": [
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "diagnosis"
+      ],
+      "kinds": [
+        "categorical"
+      ],
+      "k": 43,
+      "l": 5,
+      "t": 0.15090425531914892
+    },
+    {
+      "file": "mixed",
+      "quasi_identifiers": [
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "salary"
+      ],
+      "kinds": [
+        "numeric"
+      ],
+      "k": 43,
+      "l": 4,
+      "t": 0.07889534883720929
+    },
+    {
+      "file": "mixed",
+      "quasi_identifiers": [
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "diagnosis",
+        "salary"
+      ],
+      "kinds": [
+        "categorical",
+        "numeric"
+      ],
+      "k": 43,
+      "l": 4,
+      "t": 0.15090425531914892
+    },
+    {
+      "file": "mixed",
+      "quasi_identifiers": [
+        "birth",
+        "city"
+      ],
+      "sensitive": [
+        "diagnosis"
+      ],
+      "kinds": [
+        "categorical"
+      ],
+      "k": 19,
+      "l": 5,
+      "t": 0.2625
+    },
+    {
+      "file": "mixed",
+      "quasi_identifiers": [
+        "birth",
+        "city"
+      ],
+      "sensitive": [
+        "salary"
+      ],
+      "kinds": [
+        "numeric"
+      ],
+      "k": 19,
+      "l": 4,
+      "t": 0.093409090909091
+    },
+    {
+      "file": "mixed",
+      "quasi_identifiers": [
+        "birth",
+        "city"
+      ],
+      "sensitive": [
+        "diagnosis",
+        "salary"
+      ],
+      "kinds": [
+        "categorical",
+        "numeric"
+      ],
+      "k": 19,
+      "l": 4,
+      "t": 0.2625
+    },
+    {
+      "file": "uniform",
+      "quasi_identifiers": [
+        "birth",
+        "post",
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "diagnosis"
+      ],
+      "kinds": [
+        "categorical"
+      ],
+      "k": 120,
+      "l": 1,
+      "t": 0.4000000000000001
+    },
+    {
+      "file": "uniform",
+      "quasi_identifiers": [
+        "birth",
+        "post",
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "salary"
+      ],
+      "kinds": [
+        "numeric"
+      ],
+      "k": 120,
+      "l": 1,
+      "t": 0.4
+    },
+    {
+      "file": "uniform",
+      "quasi_identifiers": [
+        "birth",
+        "post",
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "diagnosis",
+        "salary"
+      ],
+      "kinds": [
+        "categorical",
+        "numeric"
+      ],
+      "k": 120,
+      "l": 1,
+      "t": 0.4000000000000001
+    },
+    {
+      "file": "uniform",
+      "quasi_identifiers": [
+        "city"
+      ],
+      "sensitive": [
+        "diagnosis"
+      ],
+      "kinds": [
+        "categorical"
+      ],
+      "k": 120,
+      "l": 1,
+      "t": 0.4000000000000001
+    },
+    {
+      "file": "uniform",
+      "quasi_identifiers": [
+        "city"
+      ],
+      "sensitive": [
+        "salary"
+      ],
+      "kinds": [
+        "numeric"
+      ],
+      "k": 120,
+      "l": 1,
+      "t": 0.4
+    },
+    {
+      "file": "uniform",
+      "quasi_identifiers": [
+        "city"
+      ],
+      "sensitive": [
+        "diagnosis",
+        "salary"
+      ],
+      "kinds": [
+        "categorical",
+        "numeric"
+      ],
+      "k": 120,
+      "l": 1,
+      "t": 0.4000000000000001
+    },
+    {
+      "file": "uniform",
+      "quasi_identifiers": [
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "diagnosis"
+      ],
+      "kinds": [
+        "categorical"
+      ],
+      "k": 120,
+      "l": 1,
+      "t": 0.4000000000000001
+    },
+    {
+      "file": "uniform",
+      "quasi_identifiers": [
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "salary"
+      ],
+      "kinds": [
+        "numeric"
+      ],
+      "k": 120,
+      "l": 1,
+      "t": 0.4
+    },
+    {
+      "file": "uniform",
+      "quasi_identifiers": [
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "diagnosis",
+        "salary"
+      ],
+      "kinds": [
+        "categorical",
+        "numeric"
+      ],
+      "k": 120,
+      "l": 1,
+      "t": 0.4000000000000001
+    },
+    {
+      "file": "uniform",
+      "quasi_identifiers": [
+        "birth",
+        "city"
+      ],
+      "sensitive": [
+        "diagnosis"
+      ],
+      "kinds": [
+        "categorical"
+      ],
+      "k": 120,
+      "l": 1,
+      "t": 0.4000000000000001
+    },
+    {
+      "file": "uniform",
+      "quasi_identifiers": [
+        "birth",
+        "city"
+      ],
+      "sensitive": [
+        "salary"
+      ],
+      "kinds": [
+        "numeric"
+      ],
+      "k": 120,
+      "l": 1,
+      "t": 0.4
+    },
+    {
+      "file": "uniform",
+      "quasi_identifiers": [
+        "birth",
+        "city"
+      ],
+      "sensitive": [
+        "diagnosis",
+        "salary"
+      ],
+      "kinds": [
+        "categorical",
+        "numeric"
+      ],
+      "k": 120,
+      "l": 1,
+      "t": 0.4000000000000001
+    },
+    {
+      "file": "skewed",
+      "quasi_identifiers": [
+        "birth",
+        "post",
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "diagnosis"
+      ],
+      "kinds": [
+        "categorical"
+      ],
+      "k": 200,
+      "l": 5,
+      "t": 0.37750000000000006
+    },
+    {
+      "file": "skewed",
+      "quasi_identifiers": [
+        "birth",
+        "post",
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "salary"
+      ],
+      "kinds": [
+        "numeric"
+      ],
+      "k": 200,
+      "l": 1,
+      "t": 0.16666666666666666
+    },
+    {
+      "file": "skewed",
+      "quasi_identifiers": [
+        "birth",
+        "post",
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "diagnosis",
+        "salary"
+      ],
+      "kinds": [
+        "categorical",
+        "numeric"
+      ],
+      "k": 200,
+      "l": 1,
+      "t": 0.37750000000000006
+    },
+    {
+      "file": "skewed",
+      "quasi_identifiers": [
+        "city"
+      ],
+      "sensitive": [
+        "diagnosis"
+      ],
+      "kinds": [
+        "categorical"
+      ],
+      "k": 200,
+      "l": 5,
+      "t": 0.37750000000000006
+    },
+    {
+      "file": "skewed",
+      "quasi_identifiers": [
+        "city"
+      ],
+      "sensitive": [
+        "salary"
+      ],
+      "kinds": [
+        "numeric"
+      ],
+      "k": 200,
+      "l": 1,
+      "t": 0.16666666666666666
+    },
+    {
+      "file": "skewed",
+      "quasi_identifiers": [
+        "city"
+      ],
+      "sensitive": [
+        "diagnosis",
+        "salary"
+      ],
+      "kinds": [
+        "categorical",
+        "numeric"
+      ],
+      "k": 200,
+      "l": 1,
+      "t": 0.37750000000000006
+    },
+    {
+      "file": "skewed",
+      "quasi_identifiers": [
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "diagnosis"
+      ],
+      "kinds": [
+        "categorical"
+      ],
+      "k": 200,
+      "l": 5,
+      "t": 0.37750000000000006
+    },
+    {
+      "file": "skewed",
+      "quasi_identifiers": [
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "salary"
+      ],
+      "kinds": [
+        "numeric"
+      ],
+      "k": 200,
+      "l": 1,
+      "t": 0.16666666666666666
+    },
+    {
+      "file": "skewed",
+      "quasi_identifiers": [
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "diagnosis",
+        "salary"
+      ],
+      "kinds": [
+        "categorical",
+        "numeric"
+      ],
+      "k": 200,
+      "l": 1,
+      "t": 0.37750000000000006
+    },
+    {
+      "file": "skewed",
+      "quasi_identifiers": [
+        "birth",
+        "city"
+      ],
+      "sensitive": [
+        "diagnosis"
+      ],
+      "kinds": [
+        "categorical"
+      ],
+      "k": 200,
+      "l": 5,
+      "t": 0.37750000000000006
+    },
+    {
+      "file": "skewed",
+      "quasi_identifiers": [
+        "birth",
+        "city"
+      ],
+      "sensitive": [
+        "salary"
+      ],
+      "kinds": [
+        "numeric"
+      ],
+      "k": 200,
+      "l": 1,
+      "t": 0.16666666666666666
+    },
+    {
+      "file": "skewed",
+      "quasi_identifiers": [
+        "birth",
+        "city"
+      ],
+      "sensitive": [
+        "diagnosis",
+        "salary"
+      ],
+      "kinds": [
+        "categorical",
+        "numeric"
+      ],
+      "k": 200,
+      "l": 1,
+      "t": 0.37750000000000006
+    },
+    {
+      "file": "singletons",
+      "quasi_identifiers": [
+        "birth",
+        "post",
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "diagnosis"
+      ],
+      "kinds": [
+        "categorical"
+      ],
+      "k": 1,
+      "l": 1,
+      "t": 0.8
+    },
+    {
+      "file": "singletons",
+      "quasi_identifiers": [
+        "birth",
+        "post",
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "salary"
+      ],
+      "kinds": [
+        "numeric"
+      ],
+      "k": 1,
+      "l": 1,
+      "t": 0.5000000000000002
+    },
+    {
+      "file": "singletons",
+      "quasi_identifiers": [
+        "birth",
+        "post",
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "diagnosis",
+        "salary"
+      ],
+      "kinds": [
+        "categorical",
+        "numeric"
+      ],
+      "k": 1,
+      "l": 1,
+      "t": 0.8
+    },
+    {
+      "file": "singletons",
+      "quasi_identifiers": [
+        "city"
+      ],
+      "sensitive": [
+        "diagnosis"
+      ],
+      "kinds": [
+        "categorical"
+      ],
+      "k": 37,
+      "l": 5,
+      "t": 0.032432432432432434
+    },
+    {
+      "file": "singletons",
+      "quasi_identifiers": [
+        "city"
+      ],
+      "sensitive": [
+        "salary"
+      ],
+      "kinds": [
+        "numeric"
+      ],
+      "k": 37,
+      "l": 37,
+      "t": 0.007629239978233265
+    },
+    {
+      "file": "singletons",
+      "quasi_identifiers": [
+        "city"
+      ],
+      "sensitive": [
+        "diagnosis",
+        "salary"
+      ],
+      "kinds": [
+        "categorical",
+        "numeric"
+      ],
+      "k": 37,
+      "l": 5,
+      "t": 0.032432432432432434
+    },
+    {
+      "file": "singletons",
+      "quasi_identifiers": [
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "diagnosis"
+      ],
+      "kinds": [
+        "categorical"
+      ],
+      "k": 37,
+      "l": 5,
+      "t": 0.032432432432432434
+    },
+    {
+      "file": "singletons",
+      "quasi_identifiers": [
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "salary"
+      ],
+      "kinds": [
+        "numeric"
+      ],
+      "k": 37,
+      "l": 37,
+      "t": 0.007629239978233265
+    },
+    {
+      "file": "singletons",
+      "quasi_identifiers": [
+        "city",
+        "gender"
+      ],
+      "sensitive": [
+        "diagnosis",
+        "salary"
+      ],
+      "kinds": [
+        "categorical",
+        "numeric"
+      ],
+      "k": 37,
+      "l": 5,
+      "t": 0.032432432432432434
+    },
+    {
+      "file": "singletons",
+      "quasi_identifiers": [
+        "birth",
+        "city"
+      ],
+      "sensitive": [
+        "diagnosis"
+      ],
+      "kinds": [
+        "categorical"
+      ],
+      "k": 1,
+      "l": 1,
+      "t": 0.8
+    },
+    {
+      "file": "singletons",
+      "quasi_identifiers": [
+        "birth",
+        "city"
+      ],
+      "sensitive": [
+        "salary"
+      ],
+      "kinds": [
+        "numeric"
+      ],
+      "k": 1,
+      "l": 1,
+      "t": 0.5000000000000002
+    },
+    {
+      "file": "singletons",
+      "quasi_identifiers": [
+        "birth",
+        "city"
+      ],
+      "sensitive": [
+        "diagnosis",
+        "salary"
+      ],
+      "kinds": [
+        "categorical",
+        "numeric"
+      ],
+      "k": 1,
+      "l": 1,
+      "t": 0.8
+    }
+  ]
+}

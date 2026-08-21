@@ -1,0 +1,61 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+      - name: Format
+        run: test -z "$(gofmt -l .)"
+      - name: Vet
+        run: go vet ./...
+      - name: Staticcheck
+        uses: dominikh/staticcheck-action@v1
+        with:
+          version: latest
+          install-go: false
+      - name: Test
+        run: go test -race ./...
+      - name: Fuzz the group key encoding
+        run: go test -run FuzzEncodeKey -fuzz FuzzEncodeKey -fuzztime 60s ./internal/measure
+      - name: Fuzz the bounded worst-group set against its reference
+        run: go test -run FuzzBelowSet -fuzz FuzzBelowSet -fuzztime 60s ./internal/measure
+      - name: Cross compile
+        run: |
+          GOOS=darwin GOARCH=arm64 go build -o /dev/null ./...
+          GOOS=windows GOARCH=amd64 go build -o /dev/null ./...
+      - name: The measures still agree with the reference implementation
+        run: go test -run TestAgainstReference -v ./internal/measure
+      - name: The shipped examples still say what they claim
+        run: |
+          go build -o raycheck ./cmd/raycheck
+          ./raycheck --config examples/qi.yaml examples/safe.csv
+          ! ./raycheck --config examples/qi.yaml examples/leaky.csv
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+      - name: Test
+        run: go test -race ./...
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+      - name: Test
+        run: go test ./...
+      - name: Build and run
+        run: |
+          go build -o raycheck.exe ./cmd/raycheck
+          ./raycheck.exe version
