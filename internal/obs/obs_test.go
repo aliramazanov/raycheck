@@ -34,7 +34,17 @@ func TestRowCountsAndHeartbeats(t *testing.T) {
 
 	r := New(&b, Options{Verbose: true, Heartbeat: time.Nanosecond})
 
-	for i := 0; i < beatEvery*2+5; i++ {
+	elapse := func() { r.lastBeat = r.lastBeat.Add(-time.Hour) }
+
+	for window := 0; window < 2; window++ {
+		elapse()
+
+		for i := 0; i < beatEvery; i++ {
+			r.Row()
+		}
+	}
+
+	for i := 0; i < 5; i++ {
 		r.Row()
 	}
 
@@ -44,6 +54,26 @@ func TestRowCountsAndHeartbeats(t *testing.T) {
 
 	if n := strings.Count(b.String(), "still reading"); n != 2 {
 		t.Errorf("want 2 heartbeats over 2 windows, got %d", n)
+	}
+}
+
+func TestHeartbeatIsRateLimitedByWallClock(t *testing.T) {
+	t.Parallel()
+
+	var b strings.Builder
+
+	r := New(&b, Options{Verbose: true, Heartbeat: time.Hour})
+
+	for i := 0; i < beatEvery*3; i++ {
+		r.Row()
+	}
+
+	if r.Rows() != int64(beatEvery*3) {
+		t.Errorf("want %d rows, got %d", beatEvery*3, r.Rows())
+	}
+
+	if n := strings.Count(b.String(), "still reading"); n != 0 {
+		t.Errorf("no heartbeat is due inside the interval, got %d", n)
 	}
 }
 
