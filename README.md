@@ -1,12 +1,9 @@
 # raycheck
 
-Is your anonymized data actually anonymous? raycheck does not anonymize anything. It checks
-whether anonymization that already happened actually holds, and fails the build when it
-does not.
-
-This is k-anonymity in the statistical disclosure control sense, measuring whether rows can
-be singled out. It is unrelated to the k-anonymity range protocol used by password breach
-APIs, which is the other thing that name means in this ecosystem.
+raycheck does not anonymize anything. It checks whether anonymization that already
+happened actually holds, and fails the build when it does not. This is k-anonymity in the
+statistical disclosure control sense, not the password-breach range protocol that shares
+the name.
 
 ```console
 $ raycheck --config qi.yaml seed.csv
@@ -58,10 +55,7 @@ pg_dump ... | raycheck --config qi.yaml - # read standard input, or source: "-"
 datasets:
   - name: seed
     source: seed.csv
-    quasi_identifiers:
-      - birth_date
-      - postcode
-      - gender
+    quasi_identifiers: [birth_date, postcode, gender]
     sensitive:
       - name: salary
         type: numeric
@@ -73,18 +67,14 @@ datasets:
 ```
 
 `source` resolves relative to the config file. `suppression` is the marker your anonymizer
-writes into redacted cells; rows carrying it in a quasi-identifier are excluded from
-grouping and counted separately, because otherwise every redacted row collapses into one
-enormous group and a file that is mostly redactions reports as anonymous.
-
-`l` and `t` are reported whenever you declare sensitive columns, and gate only when you set
-their thresholds. `--strict` also fails the run on advisory concerns, which is what you
-want in CI. Run `raycheck help` for the full flag list.
+writes into redacted cells; rows carrying it in a quasi-identifier are set aside and
+counted separately, because otherwise a file that is mostly redactions reports as
+anonymous. `l` and `t` gate only when you set their thresholds. `--strict` also fails on
+advisory concerns. Run `raycheck help` for the full flag list.
 
 ## Exit codes
 
-These are API. A pipeline needs to tell "the data is unsafe" apart from "the checker
-broke", so those are different codes.
+These are API. A pipeline needs to tell "the data is unsafe" from "the checker broke".
 
 | code | meaning |
 | --- | --- |
@@ -100,15 +90,14 @@ broke", so those are different codes.
 - **It will not guess your quasi-identifiers.** You declare them. Guessing wrong produces a
   confident "safe" verdict on re-identifiable data.
 - **It does not normalise your values.** No trimming, no case folding, no reading `01234` as
-  a number. Every one of those merges groups, and merging groups raises `k`. If raycheck is
-  wrong it will be wrong in the direction that reports more risk than there is.
+  a number. Each of those merges groups, and merging groups raises `k`. Where raycheck is
+  wrong it is wrong toward reporting more risk than there is.
 - Passing does not make data anonymous under the GDPR.
 
-Memory scales with the number of distinct quasi-identifier combinations, not with the number
-of rows. Input is streamed and the table is never materialised.
+Memory scales with the number of distinct quasi-identifier combinations rather than the row
+count, and with the size of the largest single record. Input is streamed.
 
-`docs/METHODOLOGY.md` states precisely what is measured and how, and how the numbers are
-checked against an independent implementation.
+`docs/METHODOLOGY.md` states precisely what is measured and how.
 
 ## License
 

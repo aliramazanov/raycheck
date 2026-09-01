@@ -80,7 +80,7 @@ func readFault(err error) error {
 		}
 	}
 
-	return err
+	return nil
 }
 
 type CSV struct {
@@ -146,7 +146,11 @@ func NewCSV(rc io.ReadCloser, delim rune) (*CSV, error) {
 			return nil, errEmptyInput
 		}
 
-		return nil, fmt.Errorf("dataset: reading the header: %w", readFault(err))
+		if fault := readFault(err); fault != nil {
+			return nil, fault
+		}
+
+		return nil, fmt.Errorf("dataset: reading the header: %w", err)
 	}
 
 	columns := make([]string, len(header))
@@ -168,7 +172,7 @@ func (c *CSV) Next() ([]string, error) {
 			return nil, c.checkTail()
 		}
 
-		if fault := readFault(err); !errors.Is(fault, err) {
+		if fault := readFault(err); fault != nil {
 			return nil, fault
 		}
 
