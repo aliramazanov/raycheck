@@ -130,3 +130,89 @@ func TestDistanceAtTheExtremes(t *testing.T) {
 		}
 	}
 }
+
+func TestNumericAxisOrdersDeterministically(t *testing.T) {
+	t.Parallel()
+
+	values := []string{
+		"9", "10", "5x", "3", "40", "7z", "100", "2", "", "NaN",
+		"1", "1.0", "01", "+1", "1.00", "0x1p0", "2.0", "0002", "10.0",
+	}
+
+	build := func() []string {
+		in := newInterner()
+		global := map[int32]int64{}
+
+		for i, v := range values {
+			global[in.id(v)] = int64(i + 1)
+		}
+
+		d := buildDomain(in, global, 55, Numeric)
+
+		out := make([]string, len(d.ids))
+
+		for i, id := range d.ids {
+			out[i] = in.value(id)
+		}
+
+		return out
+	}
+
+	want := build()
+
+	for i := 0; i < 200; i++ {
+		if got := build(); !slices.Equal(got, want) {
+			t.Fatalf("run %d ordered the axis differently:\n want %q\n  got %q", i, want, got)
+		}
+	}
+
+	if len(want) != len(values) {
+		t.Fatalf("the axis lost values: want %d, got %d", len(values), len(want))
+	}
+
+	for i := 1; i < len(want); i++ {
+		a, aok := axisValue(want[i-1])
+		b, bok := axisValue(want[i])
+
+		if aok && bok && a > b {
+			t.Errorf("numbers out of order at %d: %v then %v", i, a, b)
+		}
+		if !aok && bok {
+			t.Errorf("a non-number sorts before a number at %d: %q then %q", i, want[i-1], want[i])
+		}
+	}
+}
+
+func TestNumericAxisComparatorIsTransitive(t *testing.T) {
+	t.Parallel()
+
+	values := []string{"9", "10", "5x", "3", "40", "7z", "100", "2", "", "NaN", "-1", "0x5"}
+
+	less := func(x, y string) bool {
+		a, aok := axisValue(x)
+		b, bok := axisValue(y)
+
+		switch {
+		case aok && bok:
+			return a < b
+		case aok != bok:
+			return aok
+		default:
+			return x < y
+		}
+	}
+
+	for _, a := range values {
+		if less(a, a) {
+			t.Errorf("%q sorts before itself", a)
+		}
+
+		for _, b := range values {
+			for _, c := range values {
+				if less(a, b) && less(b, c) && !less(a, c) {
+					t.Errorf("not transitive: %q < %q < %q but not %q < %q", a, b, c, a, c)
+				}
+			}
+		}
+	}
+}

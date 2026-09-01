@@ -48,3 +48,22 @@ func TestDuration(t *testing.T) {
 		}
 	}
 }
+
+func TestDurationAtTheUnitBoundaries(t *testing.T) {
+	t.Parallel()
+
+	tests := map[time.Duration]string{
+		time.Second:                   "1.00s",
+		time.Second - time.Nanosecond: "999ms",
+		time.Millisecond:              "1ms",
+		time.Millisecond - 1:          "999us",
+		time.Microsecond:              "1us",
+		time.Microsecond - 1:          "999ns",
+	}
+
+	for d, want := range tests {
+		if got := Duration(d); got != want {
+			t.Errorf("Duration(%v) = %q, want %q", d, got, want)
+		}
+	}
+}

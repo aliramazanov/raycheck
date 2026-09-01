@@ -59,13 +59,13 @@ func writeCounts(w *errWriter, res measure.Result) {
 
 func writeMeasure(w *errWriter, res measure.Result) {
 	status := "ok  "
-	if !res.Passed() {
+	if !res.KThresholdMet() {
 		status = "FAIL"
 	}
 
 	w.printf("  %s   k-anonymity      k=%d     %s\n", status, res.K, headline(res))
 
-	if res.Passed() {
+	if res.KThresholdMet() {
 		return
 	}
 
@@ -216,7 +216,7 @@ func writeGroups(w *errWriter, res measure.Result) {
 }
 
 func writeLargest(w *errWriter, res measure.Result) {
-	if !res.Passed() {
+	if !res.KThresholdMet() {
 		return
 	}
 
@@ -245,14 +245,30 @@ func writeVerdict(w *errWriter, r Report) {
 	w.print("\n")
 
 	switch {
-	case !res.Passed() && res.UniqueRows > 0:
+	case !res.KThresholdMet() && res.UniqueRows > 0:
 		w.printf("  %s can be singled out. This data is not anonymous.\n",
 			humanize.Count(res.UniqueRows, "row"))
 
-	case !res.Passed():
+	case !res.KThresholdMet():
 		w.printf("  no row is unique, but %s sit in a group smaller than %d, so this\n",
 			humanize.Count(res.RowsAtRisk, "row"), res.Threshold)
 		w.print("  data does not meet the threshold it was checked against.\n")
+
+	case !res.DiversityPassed():
+		d, _ := res.WorstDiversity()
+
+		w.printf("  k=%d clears the threshold, but a class holds only %s of %q, so knowing\n",
+			res.K, humanize.Count(int64(d.L), "value"), d.Attribute)
+		w.print("  which class someone falls in narrows their value that far. This data\n")
+		w.print("  does not meet the l-diversity threshold it was checked against.\n")
+
+	case !res.ClosenessPassed():
+		c, _ := res.WorstCloseness()
+
+		w.printf("  k=%d clears the threshold, but a class sits %.3g from the whole file on\n",
+			res.K, c.T)
+		w.printf("  %q, so membership still says more about a person than the file does.\n", c.Attribute)
+		w.print("  This data does not meet the t-closeness threshold it was checked against.\n")
 
 	case r.strictBreach():
 		w.printf("  k=%d clears the threshold, but the concerns above stand, so this is\n", res.K)
@@ -328,7 +344,7 @@ func headline(res measure.Result) string {
 		return fmt.Sprintf("%s unique on %s", humanize.Count(res.UniqueRows, "row"), cols)
 	}
 
-	if res.Passed() {
+	if res.KThresholdMet() {
 		return fmt.Sprintf("every group on %s holds at least %d rows", cols, res.K)
 	}
 

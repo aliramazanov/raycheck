@@ -4,3 +4,4 @@
 *.test
 *.prof
 coverage.out
+/.idea/

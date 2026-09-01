@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -20,9 +21,35 @@ func (n *Whole) UnmarshalYAML(node *yaml.Node) error {
 		return err
 	}
 
+	if !plainDecimal(node.Value) {
+		return fmt.Errorf(
+			"line %d: write the threshold in plain decimal; YAML reads %s as %d",
+			node.Line, node.Value, v)
+	}
+
 	*n = Whole(v)
 
 	return nil
+}
+
+func plainDecimal(s string) bool {
+	s = strings.TrimPrefix(strings.TrimPrefix(s, "-"), "+")
+
+	if s == "" {
+		return false
+	}
+
+	if len(s) > 1 && s[0] == '0' {
+		return false
+	}
+
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+
+	return true
 }
 
 func describe(node *yaml.Node) string {
@@ -140,7 +167,6 @@ func (s *Sensitive) UnmarshalYAML(node *yaml.Node) error {
 			if val.Tag != "!!str" {
 				return fmt.Errorf("sensitive: name %s is not a column name", val.Value)
 			}
-
 			if err := val.Decode(&s.Name); err != nil {
 				return fmt.Errorf("sensitive: name: %w", err)
 			}

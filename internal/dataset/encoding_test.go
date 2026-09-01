@@ -1,6 +1,7 @@
 package dataset
 
 import (
+	"encoding/csv"
 	"errors"
 	"io"
 	"strings"
@@ -196,5 +197,102 @@ func TestBytesReadIncludesTheByteOrderMark(t *testing.T) {
 
 	if got, want := c.Bytes(), int64(len(body)); got != want {
 		t.Errorf("want %d bytes read, got %d", want, got)
+	}
+}
+
+func TestQuoteFaultsExplainTheFix(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		body string
+		bare bool
+	}{
+		"bare quote in an unquoted field": {body: "a,b\n37\"N,x\n", bare: true},
+		"unterminated quoted field":       {body: "a,b\n\"open,x\n"},
+		"quote inside a quoted field":     {body: "a,b\n\"x\"y\",z\n"},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			c := open(t, tt.body, ',')
+
+			_, err := c.Next()
+
+			var qe *QuoteError
+
+			if !errors.As(err, &qe) {
+				t.Fatalf("want *QuoteError, got %T: %v", err, err)
+			}
+
+			if qe.Line == 0 {
+				t.Error("the fault should name the line")
+			}
+
+			for _, want := range []string{"will not guess", `""`} {
+				if !strings.Contains(qe.Error(), want) {
+					t.Errorf("the message should contain %q, got %q", want, qe.Error())
+				}
+			}
+		})
+	}
+}
+
+func TestQuoteFaultUnwrapsToTheParseError(t *testing.T) {
+	t.Parallel()
+
+	c := open(t, "a,b\n37\"N,x\n", ',')
+
+	_, err := c.Next()
+
+	if _, ok := errors.AsType[*csv.ParseError](err); !ok {
+		t.Fatalf("the fault should still unwrap to the parse error, got %T", err)
+	}
+}
+
+func TestWideEncodingsAreNamedNotGuessed(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		body string
+		want string
+	}{
+		"utf-16le": {body: "\xff\xfea\x00,\x00b\x00\n\x00", want: "UTF-16LE"},
+		"utf-16be": {body: "\xfe\xff\x00a\x00,\x00b\x00\n", want: "UTF-16BE"},
+		"utf-32le": {body: "\xff\xfe\x00\x00a\x00\x00\x00", want: "UTF-32LE"},
+		"utf-32be": {body: "\x00\x00\xfe\xff\x00\x00\x00a", want: "UTF-32BE"},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := NewCSV(io.NopCloser(strings.NewReader(tt.body)), ',')
+
+			var ee *EncodingError
+
+			if !errors.As(err, &ee) {
+				t.Fatalf("want *EncodingError, got %T: %v", err, err)
+			}
+
+			if ee.Encoding != tt.want {
+				t.Errorf("want %s, got %s", tt.want, ee.Encoding)
+			}
+
+			if !strings.Contains(ee.Error(), "iconv") {
+				t.Errorf("the message should name a way to convert, got %q", ee.Error())
+			}
+		})
+	}
+}
+
+func TestUTF8BOMIsStillAccepted(t *testing.T) {
+	t.Parallel()
+
+	c := open(t, bom+"a,b\n1,2\n", ',')
+
+	if got := c.Columns()[0]; got != "a" {
+		t.Errorf("the UTF-8 mark should still be stripped, got %q", got)
 	}
 }

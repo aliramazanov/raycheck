@@ -1,7 +1,9 @@
 package measure
 
 import (
+	"cmp"
 	"math"
+	"slices"
 	"sort"
 	"strconv"
 )
@@ -18,6 +20,8 @@ type Closeness struct {
 	Kind      Kind
 	T         float64
 
+	OffAxis int
+
 	Worst    []string
 	WorstRow int64
 
@@ -31,6 +35,8 @@ type domain struct {
 
 	cumP   []float64
 	cumSum []float64
+
+	offAxis int
 }
 
 func buildDomain(in *interner, global map[int32]int64, rows int64, kind Kind) domain {
@@ -42,26 +48,46 @@ func buildDomain(in *interner, global map[int32]int64, rows int64, kind Kind) do
 
 	switch kind {
 	case Numeric:
-		sort.Slice(ids, func(i, j int) bool {
-			a, aerr := strconv.ParseFloat(in.value(ids[i]), 64)
-			b, berr := strconv.ParseFloat(in.value(ids[j]), 64)
+		slices.SortFunc(ids, func(x, y int32) int {
+			a, aok := axisValue(in.value(x))
+			b, bok := axisValue(in.value(y))
 
-			if aerr != nil || berr != nil {
-				return in.value(ids[i]) < in.value(ids[j])
+			switch {
+			case aok && bok:
+				if c := cmp.Compare(a, b); c != 0 {
+					return c
+				}
+			case aok != bok:
+				if aok {
+					return -1
+				}
+
+				return 1
 			}
 
-			return a < b
+			return cmp.Compare(in.value(x), in.value(y))
 		})
 	default:
-		sort.Slice(ids, func(i, j int) bool { return in.value(ids[i]) < in.value(ids[j]) })
+		slices.SortFunc(ids, func(x, y int32) int { return cmp.Compare(in.value(x), in.value(y)) })
+	}
+
+	off := 0
+
+	if kind == Numeric {
+		for _, id := range ids {
+			if _, ok := axisValue(in.value(id)); !ok {
+				off++
+			}
+		}
 	}
 
 	d := domain{
-		ids:    ids,
-		index:  make(map[int32]int, len(ids)),
-		p:      make([]float64, len(ids)),
-		cumP:   make([]float64, len(ids)),
-		cumSum: make([]float64, len(ids)),
+		offAxis: off,
+		ids:     ids,
+		index:   make(map[int32]int, len(ids)),
+		p:       make([]float64, len(ids)),
+		cumP:    make([]float64, len(ids)),
+		cumSum:  make([]float64, len(ids)),
 	}
 
 	var running, total float64
@@ -77,6 +103,16 @@ func buildDomain(in *interner, global map[int32]int64, rows int64, kind Kind) do
 	}
 
 	return d
+}
+
+func axisValue(s string) (float64, bool) {
+	v, err := strconv.ParseFloat(s, 64)
+
+	if err != nil || math.IsNaN(v) {
+		return 0, false
+	}
+
+	return v, true
 }
 
 type share struct {

@@ -51,9 +51,11 @@ missing from the data is a fatal error rather than a skipped one, because a drop
 quasi-identifier merges groups and turns re-identifiable data into a confident pass.
 
 Values are compared byte for byte. No trimming, no case folding, no coercing `NULL`,
-`""` and `\N` together, no reading `01234` as `1234`. Each of those merges groups,
-and merging groups raises `k`. Where raycheck is wrong it is wrong toward reporting
-more risk than there is.
+`""` and `\N` together, no reading `01234` as `1234`, and no Unicode normalisation, so
+`José` written as one codepoint and as `e` plus a combining accent stay two values. Each
+of those merges groups, and merging groups raises `k`. Byte comparison can only split a
+group, never merge one, so where raycheck is wrong it is wrong toward reporting more risk
+than there is.
 
 Rows carrying the declared `suppression` marker in any quasi-identifier are set
 aside and counted separately rather than collapsing into one enormous class, and the

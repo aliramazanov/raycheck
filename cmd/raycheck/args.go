@@ -8,6 +8,8 @@ import (
 func reorder(fs *flag.FlagSet, args []string) []string {
 	var flags, positional []string
 
+	dangling := false
+
 	for i := 0; i < len(args); i++ {
 		a := args[i]
 
@@ -44,10 +46,14 @@ func reorder(fs *flag.FlagSet, args []string) []string {
 		if i+1 < len(args) {
 			i++
 			flags = append(flags, args[i])
+
+			continue
 		}
+
+		dangling = true
 	}
 
-	if len(positional) == 0 {
+	if dangling || len(positional) == 0 {
 		return flags
 	}
 

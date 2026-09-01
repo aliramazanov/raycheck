@@ -40,13 +40,7 @@ func TestAdversarialRepeatedFlag(t *testing.T) {
 
 	write(t, dir, "seed.csv", tight)
 
-	if code, _, errOut := run(
-		t,
-		"--config",
-		"/nonexistent.yaml",
-		"--config",
-		cfg,
-	); code != exitOK {
+	if code, _, errOut := run(t, "--config", "/nonexistent.yaml", "--config", cfg); code != exitOK {
 		t.Errorf("the last value should win, got exit %d: %s", code, errOut)
 	}
 }
@@ -128,17 +122,12 @@ func TestAdversarialYAMLScalarColumnNames(t *testing.T) {
 	for _, name := range plain {
 		t.Run(name, func(t *testing.T) {
 			dir := t.TempDir()
-			cfg := write(
-				t,
-				dir,
-				"qi.yaml",
-				`
+			cfg := write(t, dir, "qi.yaml", `
 datasets:
   - name: a
     source: seed.csv
     quasi_identifiers: [`+
-					name+"]\n    thresholds:\n      k: 1\n",
-			)
+				name+"]\n    thresholds:\n      k: 1\n")
 
 			write(t, dir, "seed.csv", name+"\nvalue\n")
 
@@ -151,17 +140,12 @@ datasets:
 	for _, name := range []string{"null", "true", "false", "True", "~"} {
 		t.Run("unquoted "+name, func(t *testing.T) {
 			dir := t.TempDir()
-			cfg := write(
-				t,
-				dir,
-				"qi.yaml",
-				`
+			cfg := write(t, dir, "qi.yaml", `
 datasets:
   - name: a
     source: seed.csv
     quasi_identifiers: [`+
-					name+"]\n    thresholds:\n      k: 1\n",
-			)
+				name+"]\n    thresholds:\n      k: 1\n")
 
 			write(t, dir, "seed.csv", name+"\nvalue\n")
 
@@ -180,17 +164,12 @@ datasets:
 
 		t.Run("quoted "+name, func(t *testing.T) {
 			dir := t.TempDir()
-			cfg := write(
-				t,
-				dir,
-				"qi.yaml",
-				`
+			cfg := write(t, dir, "qi.yaml", `
 datasets:
   - name: a
     source: seed.csv
     quasi_identifiers: ["`+
-					name+"\"]\n    thresholds:\n      k: 1\n",
-			)
+				name+"\"]\n    thresholds:\n      k: 1\n")
 
 			write(t, dir, "seed.csv", name+"\nvalue\n")
 
@@ -210,10 +189,7 @@ func TestAdversarialSourceEscapesConfigDir(t *testing.T) {
 	}
 
 	write(t, root, "seed.csv", tight)
-	cfg := write(
-		t,
-		sub,
-		"qi.yaml", `
+	cfg := write(t, sub, "qi.yaml", `
 datasets:
   - name: a
     source: ../seed.csv
@@ -246,11 +222,7 @@ func TestBoolFlagDoesNotConsumeTheNextArgument(t *testing.T) {
 
 func TestStdinDeclaredInConfig(t *testing.T) {
 	dir := t.TempDir()
-	cfg := write(
-		t,
-		dir,
-		"qi.yaml",
-		`
+	cfg := write(t, dir, "qi.yaml", `
 datasets:
   - name: a
     source: "-"
@@ -280,7 +252,7 @@ datasets:
 	}
 }
 
-func TestDatasetNameShownOnlyWhenItDisambiguates(t *testing.T) {
+func TestDatasetNameShownOnlyWhenItDisambiguate(t *testing.T) {
 	dir := t.TempDir()
 
 	write(t, dir, "seed.csv", tight)
@@ -313,5 +285,40 @@ datasets:
 		if !strings.Contains(out, want) {
 			t.Errorf("two datasets should both be labelled, missing %q:\n%s", want, out)
 		}
+	}
+}
+
+func TestAdversarialDanglingFlagAtTheEnd(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	cfg := write(t, dir, "qi.yaml", oneDataset)
+	csv := write(t, dir, "seed.csv", tight)
+
+	tests := map[string][]string{
+		"config":     {csv, "--config"},
+		"dataset":    {"--config", cfg, csv, "--dataset"},
+		"format":     {"--config", cfg, csv, "--format"},
+		"log format": {"--config", cfg, csv, "--log-format"},
+	}
+
+	for name, args := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			code, _, errOut := run(t, args...)
+
+			if code != exitBadUsage {
+				t.Fatalf("want exit %d, got %d: %s", exitBadUsage, code, errOut)
+			}
+
+			if !strings.Contains(errOut, "needs an argument") {
+				t.Errorf("a flag with no value should say so, got %q", errOut)
+			}
+
+			if strings.Contains(errOut, `"--"`) || strings.Contains(errOut, "no --") {
+				t.Errorf("the separator was swallowed as the flag value: %q", errOut)
+			}
+		})
 	}
 }

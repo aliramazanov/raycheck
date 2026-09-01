@@ -29,7 +29,6 @@ datasets: *g
 	select {
 	case err := <-done:
 		t.Logf("rejected with: %v", err)
-
 		if err == nil {
 			t.Error("the bomb parsed successfully")
 		}
@@ -95,6 +94,7 @@ func TestAdversarialEnvEdgeCases(t *testing.T) {
 			if len(missing) > 0 {
 				t.Fatalf("unexpected unset variables: %v", missing)
 			}
+
 			if got != tt.want {
 				t.Errorf("want %q, got %q", tt.want, got)
 			}
@@ -153,6 +153,7 @@ func TestAdversarialSuppressionMatchingAQuasiIdentifierName(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if *cfg.Datasets[0].Suppression != "x" {
 		t.Errorf("unexpected marker %q", *cfg.Datasets[0].Suppression)
 	}
@@ -275,5 +276,83 @@ func TestAdversarialQuotedFlowMappingReference(t *testing.T) {
 
 	if cfg.Datasets[0].Thresholds.K != 5 {
 		t.Errorf("want k=5, got %d", cfg.Datasets[0].Thresholds.K)
+	}
+}
+
+func TestAdversarialThresholdMustBePlainDecimal(t *testing.T) {
+	weakened := map[string]int{"010": 8, "0o12": 10, "0x5": 5, "0b101": 5, "05": 5, "1_000": 1000}
+
+	for written, reads := range weakened {
+		t.Run(written, func(t *testing.T) {
+			_, err := Parse([]byte(datasetYAML(fieldQI, "thresholds: {k: "+written+"}")))
+
+			if err == nil {
+				t.Fatalf("%s was accepted as a threshold", written)
+			}
+
+			if !strings.Contains(err.Error(), "plain decimal") {
+				t.Errorf("the error should say how to write it, got %v", err)
+			}
+
+			if !strings.Contains(err.Error(), fmt.Sprint(reads)) {
+				t.Errorf("the error should name the value YAML read (%d), got %v", reads, err)
+			}
+		})
+	}
+
+	for _, ok := range []string{"1", "5", "10", "1000", "+5"} {
+		cfg, err := Parse([]byte(datasetYAML(fieldQI, "thresholds: {k: "+ok+"}")))
+
+		if err != nil {
+			t.Errorf("plain decimal %s was refused: %v", ok, err)
+
+			continue
+		}
+
+		if got := int(cfg.Datasets[0].Thresholds.K); fmt.Sprint(got) != strings.TrimPrefix(ok, "+") {
+			t.Errorf("%s parsed as %d", ok, got)
+		}
+	}
+}
+
+func TestAdversarialNonFiniteThreshold(t *testing.T) {
+	for _, tv := range []string{".nan", ".NaN", ".inf", "-.inf"} {
+		t.Run(tv, func(t *testing.T) {
+			_, err := Parse([]byte(datasetYAML(fieldQI,
+				"sensitive: [s]", "thresholds: {k: 1, t: "+tv+"}")))
+
+			if err == nil {
+				t.Fatalf("t: %s was accepted, and a gate cannot be compared against it", tv)
+			}
+
+			if !strings.Contains(err.Error(), "between 0 and 1") {
+				t.Errorf("the error should say what t must be, got %v", err)
+			}
+		})
+	}
+
+	for _, tv := range []string{"0", "0.5", "1"} {
+		if _, err := Parse([]byte(datasetYAML(fieldQI,
+			"sensitive: [s]", "thresholds: {k: 1, t: "+tv+"}"))); err != nil {
+			t.Errorf("t: %s is a distance in range and was refused: %v", tv, err)
+		}
+	}
+}
+
+func TestAdversarialUnsetVariableIsNamedOnce(t *testing.T) {
+	_, err := Parse([]byte(`
+datasets:
+  - name: "${RAYCHECK_ABSENT}"
+    source: "${RAYCHECK_ABSENT}"
+    quasi_identifiers: ["${RAYCHECK_ABSENT}"]
+    thresholds: {k: 1}
+`))
+
+	if err == nil {
+		t.Fatal("an unset variable with no default must be refused")
+	}
+
+	if n := strings.Count(err.Error(), "RAYCHECK_ABSENT"); n != 1 {
+		t.Errorf("the variable should be named once, got %d times: %v", n, err)
 	}
 }

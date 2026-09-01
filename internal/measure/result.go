@@ -57,7 +57,7 @@ type Diversity struct {
 	keyForTie string
 }
 
-func (r Result) Passed() bool { return r.K >= r.Threshold }
+func (r Result) KThresholdMet() bool { return r.K >= r.Threshold }
 
 func (r Result) MaxT() float64 {
 	c, ok := r.WorstCloseness()

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -207,7 +208,7 @@ func TestAdversarialFailingWithoutAnyUniqueRows(t *testing.T) {
 	if res.UniqueRows != 0 {
 		t.Fatalf("no row should be unique, got %d", res.UniqueRows)
 	}
-	if res.Passed() {
+	if res.KThresholdMet() {
 		t.Fatal("k=3 must not clear a threshold of 5")
 	}
 
@@ -344,7 +345,7 @@ func TestPassingRunShowsTheLargestGroup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !res.Passed() {
+	if !res.KThresholdMet() {
 		t.Fatal("this should pass on k alone, which is the point")
 	}
 
@@ -480,10 +481,10 @@ func TestMarkerMatchingARealValueIsRaised(t *testing.T) {
 		return Report{Result: res, SuppressionDeclared: true}
 	}
 
-	real := build([][]string{{"Praha", "M"}, {"Brno", "M"}, {"Praha", "F"}, {"Brno", "F"}})
+	realvar := build([][]string{{"Praha", "M"}, {"Brno", "M"}, {"Praha", "F"}, {"Brno", "F"}})
 
-	if !hasConcern(real, "marker_matched_one_column") {
-		t.Errorf("a marker confined to one column should be raised, got %v", keys(real))
+	if !hasConcern(realvar, "marker_matched_one_column") {
+		t.Errorf("a marker confined to one column should be raised, got %v", keys(realvar))
 	}
 
 	masked := build([][]string{{"M", "M"}, {"M", "M"}, {"Praha", "F"}, {"Brno", "F"}})
@@ -650,7 +651,7 @@ func TestDiversityFindingNamesItsClass(t *testing.T) {
 
 		row := int64(2)
 
-		for i := 0; i < 6; i++ {
+		for range 6 {
 			g.Add([]string{"Praha", "1980s", "diabetes"}, row)
 			row++
 		}
@@ -690,7 +691,7 @@ func TestDiversityClassValuesAreEscaped(t *testing.T) {
 	g := measure.NewGrouper([]string{"city"}, []int{0}, nil).
 		WithSensitive([]string{"d"}, []int{1}, []measure.Kind{measure.Categorical})
 
-	for i := 0; i < 6; i++ {
+	for i := range 6 {
 		g.Add([]string{"Praha\n  FAIL   forged", "same"}, int64(i+2))
 	}
 
@@ -718,7 +719,7 @@ func TestUngatedMeasuresAreNotMarkedOk(t *testing.T) {
 		g := measure.NewGrouper([]string{"city"}, []int{0}, nil).
 			WithSensitive([]string{"s"}, []int{1}, []measure.Kind{measure.Categorical})
 
-		for i := 0; i < 6; i++ {
+		for i := range 6 {
 			g.Add([]string{"Praha", "same"}, int64(i+2))
 		}
 
@@ -759,5 +760,81 @@ func TestUngatedMeasuresAreNotMarkedOk(t *testing.T) {
 
 	if strings.Contains(gated, "not gated") && strings.Contains(gated, ungatedClaim) {
 		t.Errorf("a gated measure should not claim it is ungated:\n%s", gated)
+	}
+}
+
+func TestVerdictNeverReadsAsAPassWhenTheGateFired(t *testing.T) {
+	t.Parallel()
+
+	build := func(sens []string, l int, tt float64) Report {
+		g := measure.NewGrouper([]string{"q"}, []int{0}, nil).
+			WithSensitive([]string{"s"}, []int{1}, []measure.Kind{measure.Categorical})
+
+		row := int64(2)
+
+		for i, v := range sens {
+			g.Add([]string{"g" + strconv.Itoa(i/5), v}, row)
+			row++
+		}
+
+		res, err := g.Finish(5, l, tt)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		return Report{Result: res, HasSensitive: true}
+	}
+
+	uniform := make([]string, 15)
+
+	for i := range uniform {
+		uniform[i] = "same"
+	}
+
+	skewed := make([]string, 15)
+
+	for i := range skewed {
+		skewed[i] = "b"
+
+		if i < 5 || i%5 == 0 {
+			skewed[i] = "a"
+		}
+	}
+
+	tests := map[string]Report{
+		"l-diversity breached": build(uniform, 2, 0),
+		"t-closeness breached": build(skewed, 0, 0.1),
+	}
+
+	for name, r := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if r.Passed() {
+				t.Fatalf("the fixture must fail: l=%d t=%v", r.Result.MinL(), r.Result.MaxT())
+			}
+
+			var b strings.Builder
+
+			if err := Text(&b, r); err != nil {
+				t.Fatal(err)
+			}
+
+			out := b.String()
+
+			for _, forbidden := range []string{
+				"no row can be singled out",
+				"not make this data anonymous under the GDPR",
+			} {
+				if strings.Contains(out, forbidden) {
+					t.Errorf("a failing run printed the passing verdict %q:\n%s", forbidden, out)
+				}
+			}
+
+			if !strings.Contains(out, "does not meet") {
+				t.Errorf("the verdict should say the run failed:\n%s", out)
+			}
+		})
 	}
 }

@@ -32,6 +32,21 @@ func (r Report) Concerns() []Concern {
 		out = append(out, Concern{Key: "blank_quasi_identifiers", Message: msg})
 	}
 
+	for _, c := range res.Closeness {
+		if c.Kind != measure.Numeric || c.OffAxis == 0 {
+			continue
+		}
+
+		out = append(out, Concern{
+			Key: "numeric_column_holds_non_numbers",
+			Message: fmt.Sprintf(
+				"%q is declared numeric, but %s in it cannot be read as a number. Anything not on the "+
+					"line is ordered as text instead, so t is only as meaningful as that ordering. "+
+					"Correct the type, or the values",
+				c.Attribute, humanize.Count(int64(c.OffAxis), "value")),
+		})
+	}
+
 	if len(res.MarkerColumns) == 1 && res.Suppressed > 0 {
 		out = append(out, Concern{
 			Key: "marker_matched_one_column",
@@ -87,7 +102,7 @@ func uniformValue(res measure.Result) (string, bool) {
 func (r Report) strictBreach() bool { return r.Strict && len(r.Concerns()) > 0 }
 
 func (r Report) Passed() bool {
-	return r.Result.Passed() && r.Result.DiversityPassed() &&
+	return r.Result.KThresholdMet() && r.Result.DiversityPassed() &&
 		r.Result.ClosenessPassed() && !r.strictBreach()
 }
 

@@ -162,6 +162,7 @@ func TestAdversarialSourceIsDirectory(t *testing.T) {
 
 func TestAdversarialThresholdExceedsRowCount(t *testing.T) {
 	dir := t.TempDir()
+
 	cfg := write(
 		t,
 		dir,
@@ -242,5 +243,50 @@ func TestAdversarialFilenameLookingLikeAFlag(t *testing.T) {
 
 	if code != exitOK {
 		t.Errorf("want exit 0, got %d: %s", code, errOut)
+	}
+}
+
+func TestAdversarialDeclaredTypeReachesTheMeasure(t *testing.T) {
+	dir := t.TempDir()
+
+	write(t, dir, "seed.csv", "q,s\na,1\na,2\nb,1\nb,100\nc,2\nc,100\n")
+
+	tOf := func(kind string) float64 {
+		cfg := write(t, dir, kind+".yaml", datasetYAML(fieldSource, "quasi_identifiers: [q]",
+			"sensitive:\n      - name: s\n        type: "+kind,
+			"thresholds: {k: 1, t: 0.99}"))
+
+		code, out, errOut := run(t, "--config", cfg, "--json")
+
+		if code != exitOK {
+			t.Fatalf("%s: want exit 0, got %d: %s", kind, code, errOut)
+		}
+
+		var doc struct {
+			Datasets []struct {
+				Closeness []struct {
+					T    float64 `json:"t"`
+					Kind string  `json:"kind"`
+				} `json:"t_closeness"`
+			} `json:"datasets"`
+		}
+
+		if err := json.Unmarshal([]byte(out), &doc); err != nil {
+			t.Fatalf("%s: %v", kind, err)
+		}
+
+		got := doc.Datasets[0].Closeness[0]
+
+		if got.Kind != kind {
+			t.Errorf("declared %q, the document reports %q", kind, got.Kind)
+		}
+
+		return got.T
+	}
+
+	num, cat := tOf("numeric"), tOf("categorical")
+
+	if num == cat {
+		t.Fatalf("the declared type never reached the measure: both distances are %v", num)
 	}
 }

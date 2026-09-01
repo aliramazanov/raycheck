@@ -25,7 +25,11 @@ func (e *ValidationError) Error() string {
 
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "config: %d problems:", len(e.Problems))
+	_, err := fmt.Fprintf(&b, "config: %d problems:", len(e.Problems))
+
+	if err != nil {
+		return ""
+	}
 
 	for _, p := range e.Problems {
 		b.WriteString("\n  " + p)

@@ -147,7 +147,12 @@ func (g *Grouper) closeness() []Closeness {
 	out := make([]Closeness, len(g.sensIdx))
 
 	for i := range out {
-		out[i] = Closeness{Attribute: g.sensitive[i], Kind: g.sensKind[i], T: -1}
+		out[i] = Closeness{
+			Attribute: g.sensitive[i],
+			Kind:      g.sensKind[i],
+			T:         -1,
+			OffAxis:   domains[i].offAxis,
+		}
 	}
 
 	present := make([][]share, len(g.sensIdx))

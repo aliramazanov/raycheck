@@ -19,7 +19,7 @@ func (a *arena) next(firstRow int64) *group {
 		case a.size == 0:
 			a.size = firstChunk
 		case a.size < chunkLimit:
-			a.size *= chunkGrowth
+			a.size = min(a.size*chunkGrowth, chunkLimit)
 		}
 
 		a.cur = make([]group, a.size)

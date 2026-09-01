@@ -107,9 +107,9 @@ func TestAdversarialResultInvariants(t *testing.T) {
 			t.Errorf("threshold %d: %d offending groups of %d", threshold, res.BelowGroups, res.Groups)
 		case len(res.Below) > res.BelowGroups:
 			t.Errorf("threshold %d: retained %d of %d", threshold, len(res.Below), res.BelowGroups)
-		case res.Passed() != (res.K >= threshold):
+		case res.KThresholdMet() != (res.K >= threshold):
 			t.Errorf("threshold %d: verdict disagrees with k=%d", threshold, res.K)
-		case res.Passed() && res.BelowGroups != 0:
+		case res.KThresholdMet() && res.BelowGroups != 0:
 			t.Errorf("threshold %d: passed with %d offending groups", threshold, res.BelowGroups)
 		}
 	}
@@ -194,7 +194,7 @@ func TestLargestGroupIsDeterministicUnderTies(t *testing.T) {
 	row := 2
 
 	for _, v := range []string{"d", "b", "a", "c"} {
-		for i := 0; i < 3; i++ {
+		for range 3 {
 			g.Add([]string{v}, int64(row))
 			row++
 		}
@@ -209,7 +209,7 @@ func TestLargestGroupIsDeterministicUnderTies(t *testing.T) {
 		t.Fatalf("the fixture should tie at 3, got %d", first.MaxGroup)
 	}
 
-	for i := 0; i < 200; i++ {
+	for i := range 200 {
 		again, err := g.Finish(1, 0, 0)
 
 		if err != nil {
@@ -303,7 +303,7 @@ func TestDiversityCatchesAHomogeneousClass(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !res.Passed() {
+	if !res.KThresholdMet() {
 		t.Errorf("k is 5 or better, so the k gate should pass: k=%d", res.K)
 	}
 	if res.DiversityPassed() {
@@ -378,7 +378,7 @@ func TestClosenessCatchesASkewedClass(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !res.Passed() {
+	if !res.KThresholdMet() {
 		t.Errorf("k is 100, the k gate should pass: k=%d", res.K)
 	}
 	if !res.DiversityPassed() {
@@ -787,6 +787,12 @@ func TestTiedDiversityNamesTheSameClassEveryRun(t *testing.T) {
 	}
 }
 
+var axisShapes = []string{
+	"1", "1.0", "01", "+1", "1.00", "0x1p0",
+	"2", "2.0", "0002", "10", "10.0", "3",
+	"", "NaN", "Inf", "-Inf", "5x", "7z", "unknown",
+}
+
 func TestResultsDoNotDependOnMapOrder(t *testing.T) {
 	t.Parallel()
 
@@ -807,12 +813,12 @@ func TestResultsDoNotDependOnMapOrder(t *testing.T) {
 		for i := range records {
 			v := make([]string, qi+2)
 
-			for j := 0; j < qi; j++ {
+			for j := range qi {
 				v[j] = "q" + strconv.Itoa(rng.Intn(card))
 			}
 
 			v[qi] = string(rune('a' + rng.Intn(4)))
-			v[qi+1] = strconv.Itoa(rng.Intn(50))
+			v[qi+1] = axisShapes[rng.Intn(len(axisShapes))]
 			records[i] = record{values: v, row: int64(i + 2)}
 		}
 
@@ -848,5 +854,155 @@ func TestResultsDoNotDependOnMapOrder(t *testing.T) {
 				t.Fatalf("shape %d run %d differs:\n want %s\n  got %s", shape, i, want, got)
 			}
 		}
+	}
+}
+
+func TestByteComparisonNeverMergesDistinctValues(t *testing.T) {
+	t.Parallel()
+
+	nfc := "José"
+	nfd := "José"
+
+	g := NewGrouper([]string{"name"}, []int{0}, nil)
+
+	row := int64(2)
+
+	for _, v := range []string{nfc, nfc, nfc, nfd, nfd, nfd} {
+		g.Add([]string{v}, row)
+		row++
+	}
+
+	res, err := g.Finish(6, 0, 0)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if res.Groups != 2 {
+		t.Errorf("two byte sequences that render alike must stay two groups, got %d", res.Groups)
+	}
+
+	if res.K != 3 {
+		t.Errorf("want k=3 from the split, got %d", res.K)
+	}
+
+	if res.KThresholdMet() {
+		t.Error("a normalising tool would report k=6 and pass; byte comparison must be the safer answer")
+	}
+}
+
+func TestManyQuasiIdentifiersGroupCorrectly(t *testing.T) {
+	t.Parallel()
+
+	for _, width := range []int{1, 2, 63, 64, 65, 128, 300} {
+		names := make([]string, width)
+		idx := make([]int, width)
+
+		for i := range names {
+			names[i] = "q" + strconv.Itoa(i)
+			idx[i] = i
+		}
+
+		g := NewGrouper(names, idx, nil)
+
+		row := int64(2)
+
+		for class := range 3 {
+			for range 4 {
+				values := make([]string, width)
+
+				for i := range values {
+					values[i] = "c" + strconv.Itoa(class) + "v" + strconv.Itoa(i)
+				}
+
+				g.Add(values, row)
+				row++
+			}
+		}
+
+		res, err := g.Finish(4, 0, 0)
+
+		if err != nil {
+			t.Fatalf("width %d: %v", width, err)
+		}
+
+		if res.Groups != 3 {
+			t.Errorf("width %d: want 3 classes, got %d", width, res.Groups)
+		}
+
+		if res.K != 4 {
+			t.Errorf("width %d: want k=4, got %d", width, res.K)
+		}
+
+		if !res.KThresholdMet() {
+			t.Errorf("width %d: k=4 must meet a threshold of 4", width)
+		}
+
+		if len(res.Largest.Values) != width {
+			t.Errorf("width %d: the named class lost values, got %d", width, len(res.Largest.Values))
+		}
+	}
+}
+
+func TestDiversityWithBlankQuasiIdentifiers(t *testing.T) {
+	t.Parallel()
+
+	g := NewGrouper([]string{"q1", "q2"}, []int{0, 1}, nil).
+		WithSensitive([]string{"s"}, []int{2}, []Kind{Categorical})
+
+	rows := [][]string{
+		{"", "x", "p"}, {"", "x", "q"}, {"", "x", "r"},
+		{"", "y", "p"}, {"", "y", "q"},
+		{"a", "x", "p"}, {"a", "x", "q"}, {"a", "x", "r"}, {"a", "x", "s"},
+	}
+
+	for i, r := range rows {
+		g.Add(r, int64(i+2))
+	}
+
+	res, err := g.Finish(1, 2, 0)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if res.Rows != int64(len(rows)) {
+		t.Fatalf("a blank is a value, so every row is grouped: want %d, got %d", len(rows), res.Rows)
+	}
+
+	if res.Groups != 3 {
+		t.Errorf("want 3 classes, got %d", res.Groups)
+	}
+
+	if res.EmptyQI != 5 {
+		t.Errorf("want 5 rows flagged as carrying a blank, got %d", res.EmptyQI)
+	}
+
+	if got := res.MinL(); got != 2 {
+		t.Errorf("the smallest class holds 2 distinct values, want l=2, got %d", got)
+	}
+
+	if worst := res.Diversity[0].Worst; len(worst) != 2 || worst[0] != "" || worst[1] != "y" {
+		t.Errorf("the named class should be the blank one, got %q", worst)
+	}
+}
+
+func TestArenaChunksStayWithinTheirLimit(t *testing.T) {
+	t.Parallel()
+
+	var a arena
+
+	for i := range chunkLimit * 6 {
+		a.next(int64(i))
+	}
+
+	for i, c := range a.chunks {
+		if len(c) > chunkLimit {
+			t.Errorf("chunk %d holds %d groups, past the limit of %d", i, len(c), chunkLimit)
+		}
+	}
+
+	if len(a.chunks) < 2 {
+		t.Fatalf("expected several chunks, got %d", len(a.chunks))
 	}
 }

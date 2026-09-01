@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
 )
 
-var envRef = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-([^}]*))?\}`)
+var envRef = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-([^}]*))?}`)
 
 func expandEnv(data []byte) ([]byte, error) {
 	if !bytes.Contains(data, []byte("${")) {
@@ -97,7 +98,9 @@ func expandString(s string, missing *[]string) (string, bool) {
 			continue
 		}
 
-		*missing = append(*missing, name)
+		if !slices.Contains(*missing, name) {
+			*missing = append(*missing, name)
+		}
 	}
 
 	b.WriteString(s[last:])

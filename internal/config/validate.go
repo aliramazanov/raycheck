@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"math"
 	"slices"
 	"strings"
 	"unicode/utf8"
@@ -37,6 +38,7 @@ func (v *validator) addf(format string, args ...any) {
 
 func (v *validator) dataset(i int, d Dataset) {
 	v.label = fmt.Sprintf("dataset %d", i)
+
 	if d.Name != "" {
 		v.label = fmt.Sprintf("dataset %q", d.Name)
 	}
@@ -111,10 +113,8 @@ func (v *validator) thresholds(d Dataset) {
 	}
 
 	switch {
-	case d.Thresholds.T < 0 || d.Thresholds.T > 1:
-		if d.Thresholds.T != 0 {
-			v.addf("thresholds.t is a distance between 0 and 1, got %v", d.Thresholds.T)
-		}
+	case math.IsNaN(d.Thresholds.T) || d.Thresholds.T < 0 || d.Thresholds.T > 1:
+		v.addf("thresholds.t is a distance between 0 and 1, got %v", d.Thresholds.T)
 	case d.Thresholds.T > 0 && len(d.Sensitive) == 0:
 		v.addf("thresholds.t is set but no sensitive columns are declared, and t-closeness is measured over them")
 	}

@@ -170,10 +170,10 @@ func TestThresholdBoundary(t *testing.T) {
 
 	rows := [][]string{{"a"}, {"a"}, {"a"}}
 
-	if res := run(t, rows, 3, nil); !res.Passed() {
+	if res := run(t, rows, 3, nil); !res.KThresholdMet() {
 		t.Errorf("k=3 against threshold 3 should pass")
 	}
-	if res := run(t, rows, 4, nil); res.Passed() {
+	if res := run(t, rows, 4, nil); res.KThresholdMet() {
 		t.Errorf("k=3 against threshold 4 should fail")
 	}
 }
@@ -186,7 +186,7 @@ func TestSingleRow(t *testing.T) {
 	if res.K != 1 || res.Rows != 1 || res.Groups != 1 {
 		t.Fatalf("unexpected result %+v", res)
 	}
-	if res.Passed() {
+	if res.KThresholdMet() {
 		t.Error("a single row cannot satisfy k=2")
 	}
 }
@@ -226,7 +226,7 @@ func TestSuppressionIsExcludedNotGrouped(t *testing.T) {
 	if declared.Rows != 1 {
 		t.Errorf("want 1 row grouped, got %d", declared.Rows)
 	}
-	if declared.Passed() {
+	if declared.KThresholdMet() {
 		t.Error("one real row cannot satisfy k=5 no matter how many were suppressed")
 	}
 }
@@ -236,7 +236,7 @@ func TestSuppressionWouldOtherwiseInflateK(t *testing.T) {
 
 	rows := [][]string{{"*"}, {"*"}, {"*"}, {"*"}, {"*"}}
 
-	if res := run(t, rows, 5, nil); res.K != 5 || !res.Passed() {
+	if res := run(t, rows, 5, nil); res.K != 5 || !res.KThresholdMet() {
 		t.Fatalf("grouped literally this passes, which is the trap: %+v", res)
 	}
 

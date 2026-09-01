@@ -102,9 +102,9 @@ func TestAdversarialSuppressionMarkerCollidesWithRealData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Logf("k=%d over %d rows, %d excluded, passed=%v", res.K, res.Rows, res.Suppressed, res.Passed())
+	t.Logf("k=%d over %d rows, %d excluded, passed=%v", res.K, res.Rows, res.Suppressed, res.KThresholdMet())
 
-	if !res.Passed() {
+	if !res.KThresholdMet() {
 		t.Fatal("expected this to pass, which is the point")
 	}
 	if res.Suppressed*2 < res.Rows {
@@ -185,7 +185,7 @@ func TestAdversarialAddDoesNotRetainCallerRow(t *testing.T) {
 func TestAdversarialThresholdOne(t *testing.T) {
 	res := groupAll(t, [][]string{{"a"}, {"b"}}, 1)
 
-	if !res.Passed() {
+	if !res.KThresholdMet() {
 		t.Error("k=1 must satisfy a threshold of 1")
 	}
 	if res.BelowGroups != 0 || len(res.Below) != 0 {

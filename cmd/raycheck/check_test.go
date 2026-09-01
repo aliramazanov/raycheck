@@ -64,6 +64,7 @@ func TestExamplesShipHonest(t *testing.T) {
 	if code != exitBreached {
 		t.Errorf("leaky example should breach the gate, got %d\n%s%s", code, out, errOut)
 	}
+
 	if !strings.Contains(out, "This data is not anonymous") {
 		t.Errorf("want the verdict spelled out, got:\n%s", out)
 	}

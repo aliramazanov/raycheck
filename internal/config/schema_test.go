@@ -231,14 +231,13 @@ func TestThresholdTypeErrorNamesTheType(t *testing.T) {
 
 	for value, want := range tests {
 		t.Run(value, func(t *testing.T) {
-			_, err := Parse([]byte(
-				`
+			_, err := Parse([]byte(`
 datasets:
   - name: a
     quasi_identifiers: [x]
     thresholds:
       k: ` +
-					value + "\n"))
+				value + "\n"))
 
 			if err == nil {
 				t.Fatalf("accepted k: %s", value)

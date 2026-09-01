@@ -13,6 +13,30 @@ import (
 
 const bom = "\ufeff"
 
+type EncodingError struct{ Encoding string }
+
+func (e *EncodingError) Error() string {
+	return fmt.Sprintf("dataset: this file begins with a %s byte order mark, so its text is %s rather "+
+		"than UTF-8. raycheck compares values byte for byte and will not transcode them, because a "+
+		"transcoding that guesses wrong changes a value and so changes k. Convert the file first, for "+
+		"example with iconv -f %s -t UTF-8", e.Encoding, e.Encoding, e.Encoding)
+}
+
+func wideEncoding(prefix []byte) string {
+	switch {
+	case len(prefix) >= 4 && string(prefix[:4]) == "\xff\xfe\x00\x00":
+		return "UTF-32LE"
+	case len(prefix) >= 4 && string(prefix[:4]) == "\x00\x00\xfe\xff":
+		return "UTF-32BE"
+	case len(prefix) >= 2 && string(prefix[:2]) == "\xff\xfe":
+		return "UTF-16LE"
+	case len(prefix) >= 2 && string(prefix[:2]) == "\xfe\xff":
+		return "UTF-16BE"
+	}
+
+	return ""
+}
+
 type SkippedLineError struct {
 	Line int64
 }
@@ -21,6 +45,42 @@ func (e *SkippedLineError) Error() string {
 	return fmt.Sprintf("dataset: line %d is blank. A blank line is either stray formatting or, in a "+
 		"single-column file, a row whose only value is empty, and raycheck will not guess which. "+
 		"Delete the line, or write the empty value as \"\"", e.Line)
+}
+
+type QuoteError struct {
+	Line   int
+	Column int
+	Bare   bool
+	Err    error
+}
+
+func (e *QuoteError) Error() string {
+	if e.Bare {
+		return fmt.Sprintf("dataset: line %d, column %d: a double quote sits inside a field that is not "+
+			"quoted, so where the value ends is ambiguous. raycheck will not guess, because guessing "+
+			"changes the value and a changed value changes k. Quote the whole field and write any quote "+
+			"inside it twice, as \"\"", e.Line, e.Column)
+	}
+
+	return fmt.Sprintf("dataset: line %d, column %d: a quoted field is missing its closing quote, or "+
+		"carries a quote that is not doubled, so where the value ends is ambiguous. raycheck will not "+
+		"guess. Write any quote inside a quoted field twice, as \"\"", e.Line, e.Column)
+}
+
+func (e *QuoteError) Unwrap() error { return e.Err }
+
+func readFault(err error) error {
+
+	if pe, ok := errors.AsType[*csv.ParseError](err); ok {
+		switch {
+		case errors.Is(pe.Err, csv.ErrBareQuote):
+			return &QuoteError{Line: pe.Line, Column: pe.Column, Bare: true, Err: err}
+		case errors.Is(pe.Err, csv.ErrQuote):
+			return &QuoteError{Line: pe.Line, Column: pe.Column, Err: err}
+		}
+	}
+
+	return err
 }
 
 type CSV struct {
@@ -61,6 +121,12 @@ func NewCSV(rc io.ReadCloser, delim rune) (*CSV, error) {
 
 	lines := &lineCounter{r: br}
 
+	prefix, _ := br.Peek(4)
+
+	if enc := wideEncoding(prefix); enc != "" {
+		return nil, &EncodingError{Encoding: enc}
+	}
+
 	if prefix, err := br.Peek(len(bom)); err == nil && string(prefix) == bom {
 		_, _ = br.Discard(len(bom))
 
@@ -80,7 +146,7 @@ func NewCSV(rc io.ReadCloser, delim rune) (*CSV, error) {
 			return nil, errEmptyInput
 		}
 
-		return nil, fmt.Errorf("dataset: reading the header: %w", err)
+		return nil, fmt.Errorf("dataset: reading the header: %w", readFault(err))
 	}
 
 	columns := make([]string, len(header))
@@ -100,6 +166,10 @@ func (c *CSV) Next() ([]string, error) {
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			return nil, c.checkTail()
+		}
+
+		if fault := readFault(err); !errors.Is(fault, err) {
+			return nil, fault
 		}
 
 		return nil, fmt.Errorf("dataset: %w", err)

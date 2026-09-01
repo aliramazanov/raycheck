@@ -56,6 +56,7 @@ func check(rec *obs.Recorder, o options) ([]report.Report, error) {
 	}
 
 	override := ""
+
 	if len(o.args) == 1 {
 		override = o.args[0]
 	}

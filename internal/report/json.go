@@ -37,7 +37,7 @@ func datasetDoc(r Report) jsonDataset {
 		K:                res.K,
 
 		Passed:        r.Passed(),
-		KThresholdMet: res.Passed(),
+		KThresholdMet: res.KThresholdMet(),
 		Concerns:      concerns(r),
 
 		RowsChecked:    res.Rows,
